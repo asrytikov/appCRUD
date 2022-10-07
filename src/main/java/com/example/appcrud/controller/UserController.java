@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.ModelAndView;
 
 import java.util.List;
 
@@ -17,31 +18,51 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    public UserController(UserService userService){
+        this.userService = userService;
+    }
+
     @GetMapping("/")
-    public ResponseEntity <List<User>> getAllUsers(){
-        return ResponseEntity.ok().body(userService.getAllUsers());
+    public ModelAndView getAllUsers(){
+        Iterable<User> users = userService.getAllUsers();
+        return new ModelAndView("index", "usersList", users);
     }
 
     @GetMapping("/user/{id}")
-    public ResponseEntity <User> getUserById(@PathVariable int id){
-        return ResponseEntity.ok().body(userService.getUserById(id));
+    public ModelAndView getUserById(@PathVariable int id){
+        User user = userService.getUserById(id);
+        return new ModelAndView("user", "user", user);
     }
 
-    @PostMapping(value = "/user", produces = APPLICATION_JSON_VALUE)
-    public ResponseEntity <User> createUser(@RequestBody User user){
-        return ResponseEntity.ok().body(this.userService.createUser(user));
+    @GetMapping("create")
+    public ModelAndView createUserForm(@ModelAttribute User user){
+        return new ModelAndView("create", "user", user);
     }
 
-    @PutMapping("/user/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable int id, @RequestBody User user){
-        user.setId(id);
-        return ResponseEntity.ok().body(this.userService.updateUser(user));
+    @PostMapping
+    public ModelAndView createUser(@ModelAttribute User user){
+        user = this.userService.createUser(user);
+        return new ModelAndView("redirect:/user/{user.id}", "user.id", user.getId());
     }
 
-    @DeleteMapping("/user/{id}")
-    public HttpStatus deleteUser(@PathVariable int id){
+    @GetMapping("/update/{id}")
+    public ModelAndView updateUser(@PathVariable int id){
+        User user = userService.getUserById(id);
+        return new ModelAndView("update", "user", user);
+    }
+
+    @PostMapping("/updateUser")
+    public ModelAndView updateUser(@ModelAttribute User user){
+        this.userService.updateUser(user);
+        Iterable<User> users = userService.getAllUsers();
+        return new ModelAndView("redirect:/", "usersList", users);
+    }
+
+    @GetMapping("/delete/{id}")
+    public ModelAndView deleteUser(@PathVariable int id){
         this.userService.deleteUser(id);
-        return HttpStatus.OK;
+        Iterable<User> users = userService.getAllUsers();
+        return new ModelAndView("redirect:/", "usersList", users);
     }
 
 
